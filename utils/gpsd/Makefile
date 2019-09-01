@@ -8,25 +8,23 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=gpsd
-PKG_VERSION:=3.16
+PKG_VERSION:=3.19
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=@SAVANNAH/$(PKG_NAME)
-PKG_HASH:=03579af13a4d3fe0c5b79fa44b5f75c9f3cac6749357f1d99ce5d38c09bc2029
+PKG_HASH:=27dd24d45b2ac69baab7933da2bf6ae5fb0be90130f67e753c110a3477155f39
 
 PKG_MAINTAINER:=Pushpal Sidhu <psidhu.devel@gmail.com>
 PKG_LICENSE:=BSD-3-Clause
 PKG_LICENSE_FILES:=COPYING
-
-PKG_BUILD_DEPENDS:=libncurses libusb-1.0
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/scons.mk
 
 define Package/gpsd/Default
   DEPENDS+= +libusb-1.0
-  URL:=http://catb.org/gpsd/
+  URL:=https://gpsd.gitlab.io/gpsd/
 endef
 
 define Package/gpsd/Default/description

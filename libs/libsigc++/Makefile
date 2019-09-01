@@ -8,17 +8,19 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libsigc++
-PKG_VERSION:=2.5.4
+PKG_VERSION:=2.10.2
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
-PKG_SOURCE_URL:=@GNOME/libsigc++/2.5
-PKG_HASH:=ecf55f53d6058ba6e41985b862f2e95fb5c2b31c008caa16984e790547337ea7
-PKG_MAINTAINER:=Steven Barth <cyrus@openwrt.org>
-PKG_LICENSE:=LGPL-2.1
+PKG_SOURCE_URL:=@GNOME/libsigc++/2.10
+PKG_HASH:=b1ca0253379596f9c19f070c83d362b12dfd39c0a3ea1dd813e8e21c1a097a98
 
-PKG_FIXUP:=autoreconf
+PKG_MAINTAINER:=Rosen Penev <rosenp@gmail.com>
+PKG_LICENSE:=LGPL-3.0-or-later
+PKG_LICENSE_FILES:=COPYING
+
 PKG_INSTALL:=1
+PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -26,7 +28,7 @@ define Package/libsigcxx
   SECTION:=libs
   CATEGORY:=Libraries
   TITLE:=typesafe callback system for standard C++
-  URL:=http://libsigc.sourceforge.net/
+  URL:=https://libsigcplusplus.github.io/libsigcplusplus/
   DEPENDS:=+libstdcpp
 endef
 
@@ -36,14 +38,14 @@ define Package/libsigcxx/description
  whether it is static or virtual.
 endef
 
-TARGET_CFLAGS += $(FPIC)
-
-TARGET_CPPFLAGS +=  \
-	-fno-strict-aliasing -fno-inline \
-
 CONFIGURE_ARGS += \
 	--enable-shared \
 	--enable-static \
+	--disable-benchmark \
+	--disable-documentation \
+	--disable-deprecated-api \
+	--disable-warnings \
+	--without-boost
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include

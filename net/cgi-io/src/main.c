@@ -117,11 +117,11 @@ out:
 }
 
 static char *
-md5sum(const char *file)
+checksum(const char *applet, size_t sumlen, const char *file)
 {
 	pid_t pid;
 	int fds[2];
-	static char md5[33];
+	static char chksum[65];
 
 	if (pipe(fds))
 		return NULL;
@@ -141,20 +141,20 @@ md5sum(const char *file)
 		close(fds[0]);
 		close(fds[1]);
 
-		if (execl("/bin/busybox", "/bin/busybox", "md5sum", file, NULL))
+		if (execl("/bin/busybox", "/bin/busybox", applet, file, NULL))
 			return NULL;
 
 		break;
 
 	default:
-		memset(md5, 0, sizeof(md5));
-		read(fds[0], md5, 32);
+		memset(chksum, 0, sizeof(chksum));
+		read(fds[0], chksum, sumlen);
 		waitpid(pid, NULL, 0);
 		close(fds[0]);
 		close(fds[1]);
 	}
 
-	return md5;
+	return chksum;
 }
 
 static char *
@@ -263,10 +263,68 @@ postdecode(char **fields, int n_fields)
 	return (found >= n_fields);
 }
 
+static char *
+canonicalize_path(const char *path, size_t len)
+{
+	char *canonpath, *cp;
+	const char *p, *e;
+
+	if (path == NULL || *path == '\0')
+		return NULL;
+
+	canonpath = datadup(path, len);
+
+	if (canonpath == NULL)
+		return NULL;
+
+	/* normalize */
+	for (cp = canonpath, p = path, e = path + len; p < e; ) {
+		if (*p != '/')
+			goto next;
+
+		/* skip repeating / */
+		if ((p + 1 < e) && (p[1] == '/')) {
+			p++;
+			continue;
+		}
+
+		/* /./ or /../ */
+		if ((p + 1 < e) && (p[1] == '.')) {
+			/* skip /./ */
+			if ((p + 2 >= e) || (p[2] == '/')) {
+				p += 2;
+				continue;
+			}
+
+			/* collapse /x/../ */
+			if ((p + 2 < e) && (p[2] == '.') && ((p + 3 >= e) || (p[3] == '/'))) {
+				while ((cp > canonpath) && (*--cp != '/'))
+					;
+
+				p += 3;
+				continue;
+			}
+		}
+
+next:
+		*cp++ = *p++;
+	}
+
+	/* remove trailing slash if not root / */
+	if ((cp > canonpath + 1) && (cp[-1] == '/'))
+		cp--;
+	else if (cp == canonpath)
+		*cp++ = '/';
+
+	*cp = '\0';
+
+	return canonpath;
+}
+
 static int
 response(bool success, const char *message)
 {
-	char *md5;
+	char *chksum;
 	struct stat s;
 
 	printf("Status: 200 OK\r\n");
@@ -274,9 +332,22 @@ response(bool success, const char *message)
 
 	if (success)
 	{
-		if (!stat(st.filename, &s) && (md5 = md5sum(st.filename)) != NULL)
-			printf("\t\"size\": %u,\n\t\"checksum\": \"%s\"\n",
-				   (unsigned int)s.st_size, md5);
+		if (!stat(st.filename, &s))
+			printf("\t\"size\": %u,\n", (unsigned int)s.st_size);
+		else
+			printf("\t\"size\": null,\n");
+
+		chksum = checksum("md5sum", 32, st.filename);
+		printf("\t\"checksum\": %s%s%s,\n",
+			chksum ? "\"" : "",
+			chksum ? chksum : "null",
+			chksum ? "\"" : "");
+
+		chksum = checksum("sha256sum", 64, st.filename);
+		printf("\t\"sha256sum\": %s%s%s\n",
+			chksum ? "\"" : "",
+			chksum ? chksum : "null",
+			chksum ? "\"" : "");
 	}
 	else
 	{
@@ -404,6 +475,9 @@ data_begin_cb(multipart_parser *p)
 		if (!st.filename)
 			return response(false, "File data without name");
 
+		if (!session_access(st.sessionid, st.filename, "write"))
+			return response(false, "Access to path denied by ACL");
+
 		st.tempfd = mkstemp(tmpname);
 
 		if (st.tempfd < 0)
@@ -425,7 +499,7 @@ data_cb(multipart_parser *p, const char *data, size_t len)
 		break;
 
 	case PART_FILENAME:
-		st.filename = datadup(data, len);
+		st.filename = canonicalize_path(data, len);
 		break;
 
 	case PART_FILEMODE:

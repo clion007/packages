@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2006-2016 OpenWrt.org
+# Copyright (C) 2006-2017 OpenWrt.org
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -8,13 +8,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=vala
-PKG_VERSION:=0.34.2
+PKG_VERSION:=0.34.18
 PKG_RELEASE:=1
 PKG_LICENSE:=LGPL-2.1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
-PKG_SOURCE_URL:=@GNOME/vala/0.34/
-PKG_HASH:=765e9c2b429a66db93247940f8588319b43f35c173d057bcae5717a97d765c41
+PKG_SOURCE_URL:=@GNOME/vala/0.34
+PKG_HASH:=b89044c6eb70556ca2486812a42983944b4f6ef18db66b5af1a9006de11b1cd2
 
 PKG_BUILD_DEPENDS:=glib2 glib2/host vala/host
 HOST_BUILD_DEPENDS:=glib2/host
